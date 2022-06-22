@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-script
+  namespace: mongo-nami-prod
+data:
+  backup.sh: |
+    #!/bin/bash
+    JSON_FILE=$(cat <<-END
+     {
+        "type": "service_account",
+        "project_id": "lyceum-88ddb",
+        "private_key_id": "65c1d55a5911977b2358abaea2934e9a425804af",
+        "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCKXfBkPta/Y6Yk\nDYiRck5uGMM7rtgSJdlvwttTei/CYPfs6ybxR0WZgpKDuTyQ2fRtulRBANW48mAh\nJQUaoWRzO755bXphueyW2jSKDn8ok/RAqkKqdZA9zI3MlZLvQl6axbd0UFsVkkAc\nuH7juf60W9PN1ut+5i2VCN82AngY6At10reVl5NTTQBEkpv681djhgrIhU1CJE4a\n/opKTySBWE3XTMtZ0ttrarHYoph/SGXdvSc/iwAMiDyM6P7Z90iNAEXzbSGF7eOP\ntZaCWViluSpZXWjGqxBDture3vP8XrgM9sN3e9fOAMKw5mLiQtYNHtsZLpecNsgI\n7uSoEvHTAgMBAAECggEAEzQBYnBELpC+ZJ+KNiFmmCoQom5cJ3ygRj4FYXsCONhr\nYDKsl2zcUHdKLUTejn3pSfdDrTfX8ZCV3dO89xqyDbobb8/NXdXHa5JCG2zyoeeS\nzQy0LuMdDy6d+WhC2bjc118cXGSwl3hSNIo4dhOAsXhTF2y+B0Ebz2TJUb4a+924\nQF0rOjy7NVeYojXF6T+amx7qEM5QSIeSXKiA3B+KIVcKJv5CCx/z8VxsKGTHX4i/\nasLQ8q+NrAxheKM9APfR2Ji60r3odFFEhaCNX5V18Tpg5JKYxJMt23KD8jhZE1Yq\neG6D/987VdL4ZnFS8eH8m0c8hlQPebWcuhzetQxccQKBgQDCjY9SLPi6EioAqRhD\niX2AQf4y8289GSavnju9ir9m/rqNav4FCSt+bdByDpiLXipUTH6aLl6G9zbO42Cp\nFdtcsZXIAPjKoemOLLssLr1ExVc7uHuoL1qH/P6ArbMimC/dE+sKNEr3OtJWz40o\nIrStxZE2R1SWgQfPSFmtd149IwKBgQC2EX/EKgLokE1fZJUJ0T1wt1mfWgWqauJS\nG3b5e4H/fMHSGQNFxsu5x0jzFUK6uUjEZDDA9CthGaaq1ip3ABtV4nbg3cLDGtpN\nZWy+VoNr06bQx/2fAiEbzIA5iROFEZ/oiU6y0ftokuQqoHAksLI9lBJw8fpD0XQA\nQshVWcv7kQKBgHr5YbtOo9Vxf801FRozgPmePSBVkV2sVTCysw5G8l8W6jJTi8cB\nGdXrcdN2eGO3nMf2Jhws7SEgiCtTvBiEsUixE3z9aEUk/O0aRyFRVd9vYYllPfx8\nGhxVBUWvBcj7K13xpiKoFS6aprOqs43ICi7A793ATq5nVtll4RFtn0rDAoGAPkj2\nQJFutUjIb13lbppaPnk6+7y8O3SdQCGNLgQGkPSJCersp64+e6ulVSNs1JwWPLlZ\nxGjDflBcKA1kMZmjwFnc+UhkHILPM7MC5IqMIxMg+kOwi/kagnwPUZ+HQfqpjc+L\nULltHHVEASEpvCOGlnJVbLYbO6An4v71sd0qX0ECgYAHPLaG4dg3k+wFwV3j/zgf\nbnaSGC6ubvtUPTw06cmK0JnWQIxjznAdAu43WT+4QhfQ6aZ+YMKfQ1qX5bfyFu8t\npf4qYAg5fNxNjaxeDR2+QQfavm6WlLkS+as4wX7XpoOBN+Jioysn1prZ/IOdm1zk\nzIc/6CqOoh7UXOlDw7pkCQ==\n-----END PRIVATE KEY-----\n",
+        "client_email": "lyceum-88ddb@appspot.gserviceaccount.com",
+        "client_id": "113368246214810446908",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/lyceum-88ddb%40appspot.gserviceaccount.com"
+     }
+
+    END
+    )
+    echo "$JSON_FILE" > key.json
+    gcloud auth activate-service-account --key-file=key.json
+    mkdir backups
+    mkdir zips
+    apt install zip -y
+    BACKUP_DIR=$(date +'%m.%d.%Y')
+    array=($(kubectl get pods -n mongo-nami-prod | grep mongodb-nami-0 | awk '{ print $1 }'))
+    for KEY in "${!array[@]}"; do
+      kubectl exec -i -n mongo-nami-prod ${array[$KEY]} -- bash -c "cd tmp && mongodump  -u root --authenticationDatabase admin -p Lyc3um_L3g1t -o mongo && exit"
+      kubectl cp mongo-nami-prod/${array[$KEY]}:/tmp/mongo /backups/${array[$KEY]}
+      zip -r /zips/${array[$KEY]}.zip  /backups/${array[$KEY]}
+    done
+    gsutil cp -r /zips gs://lyceum-mongodb-backup/mongodb-nami-prod/${BACKUP_DIR}
+
+

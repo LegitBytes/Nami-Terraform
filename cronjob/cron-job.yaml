@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kb-promotion-prod
+spec:
+      template:
+        spec:
+          containers:
+          - name:  kb-promotion-prod
+            image: mongo
+            imagePullPolicy: IfNotPresent
+            command: [ "/bin/sh" ]
+            args: [ "/tmp/recover/recover.sh" ]
+            env:
+            - name: DB_USER
+              value: root
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kb-promotion-prod-password
+                  key: DB_PASSWORD
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name:  kb-promotion-prod-uri
+                  key: MONGODB_URI
+            - name: OSS_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: oss-bucket
+                  key: OSS_BUCKET
+            - name: OSS_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oss-access-key
+                  key: OSS_ACCESS_KEY
+            - name: OSS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oss-secret-key
+                  key: OSS_SECRET_KEY
+            - name: BACKUP_FILE_LOCATION
+              valueFrom:
+                secretKeyRef:
+                  name: backup-file-location-promotion
+                  key: BACKUP_FILE_LOCATION
+            volumeMounts:
+            - name: recover-script
+              mountPath: "/tmp/recover/"
+            - name: oss-script
+              mountPath: "/tmp/oss-config/"
+          volumes:
+          - name: recover-script
+            configMap:
+              name: recover-config
+              defaultMode: 0777
+          - name: oss-script
+            configMap:
+              name: oss-config
+              defaultMode: 0777 
+          restartPolicy: OnFailure
+          terminationGracePeriodSeconds: 0
