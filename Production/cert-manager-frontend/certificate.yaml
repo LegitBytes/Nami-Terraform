@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nami-frontend-prod
+  namespace: nami-frontend-prod
+spec:
+  dnsNames:
+    - app.nami.gg
+  secretName: nami-frontend-tls-prod
+  issuerRef:
+    name: letsencrypt-cluster-issuer
+    kind: ClusterIssuer

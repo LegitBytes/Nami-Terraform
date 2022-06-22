@@ -1,0 +1,47 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cron-backup
+  namespace: mongo-nami-prod
+spec:
+  schedule: '@daily'
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: cluster-reader
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup-script
+              configMap:
+                name: backup-script
+                defaultMode: 511
+          containers:
+            - name: runner
+              image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+              command: ["/bin/bash", "-c", "/scripts/backup.sh"]
+              securityContext:
+                runAsUser: 0
+              volumeMounts:
+                - name: backup-script
+                  mountPath: /scripts/backup.sh
+                  subPath: backup.sh
+              env:
+                - name: GOOGLE_STORAGE_BUCKET
+                  value: lyceum-mongodb-backup
+                - name: GCS_PRIVATE_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: gcs-private-key-id
+                      key: GCS_PRIVATE_KEY_ID
+                - name: GCS_CLIENT_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: gcs-client-id
+                      key: GCS_CLIENT_ID
+                - name: GCS_PRIVATE_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: gcs-private-key
+                      key: GCS_PRIVATE_KEY
+

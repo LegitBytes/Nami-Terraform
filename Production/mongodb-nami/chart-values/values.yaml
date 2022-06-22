@@ -1,0 +1,53 @@
+#  mongodbRootPassword: Lyc3um_L3g1t
+#  mongodbUsername: lyceum-mongo-db
+#  mongodbPassword: Lyc3um_mon30
+#  mongodbDatabase: auth-db
+
+
+ image:
+  ## Bitnami MongoDB registry
+  ##
+  registry: docker.io
+  ## Bitnami MongoDB image name
+  ##
+  repository: bitnami/mongodb
+  ## Bitnami MongoDB image tag
+  ## ref: https://hub.docker.com/r/bitnami/mongodb/tags/
+  ##
+  tag: 5.0.8-debian-10-r4
+
+  ## Specify a imagePullPolicy
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ## 
+# replicaSet:
+#   ## Whether to create a MongoDB replica set for high availability or not
+#   enabled: true
+#   useHostnames: true
+
+#   ## Name of the replica set
+#   ##
+#   name: rs0
+
+#   ## Key used for replica set authentication
+#   ##
+#   # key: key
+
+#   ## Number of replicas per each node type
+#   ##
+#   replicas:
+#     secondary: 2
+#     arbiter: 2
+
+#   ## Pod Disruption Budget
+#   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+#   pdb:
+#     enabled: true
+#     minAvailable:
+#       primary: 2
+#       secondary: 2
+#       arbiter: 2
